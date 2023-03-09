@@ -300,9 +300,6 @@ func (client *Client) doRequest(
 	if err = CheckResponse(result.Response); err != nil {
 		return result, err
 	}
-	if validate {
-
-	}
 	// Validate WechatPay Signature
 	if err = client.validator.Validate(ctx, result.Response); err != nil {
 		return result, err
