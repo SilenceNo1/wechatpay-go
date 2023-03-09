@@ -141,6 +141,11 @@ func (client *Client) Get(ctx context.Context, requestURL string) (*APIResult, e
 	return client.doRequest(ctx, http.MethodGet, requestURL, nil, consts.ApplicationJSON, nil, "")
 }
 
+// Get 向微信支付发送一个 HTTP Get 请求
+func (client *Client) GetNoValidate(ctx context.Context, requestURL string) (*APIResult, error) {
+	return client.doRequestNoValidate(ctx, http.MethodGet, requestURL, nil, consts.ApplicationJSON, nil, "")
+}
+
 // Post 向微信支付发送一个 HTTP Post 请求
 func (client *Client) Post(ctx context.Context, requestURL string, requestBody interface{}) (*APIResult, error) {
 	return client.requestWithJSONBody(ctx, http.MethodPost, requestURL, requestBody)
@@ -178,6 +183,65 @@ func (client *Client) requestWithJSONBody(ctx context.Context, method, requestUR
 	}
 
 	return client.doRequest(ctx, method, requestURL, nil, consts.ApplicationJSON, reqBody, reqBody.String())
+}
+
+func (client *Client) doRequestNoValidate(
+	ctx context.Context,
+	method string,
+	requestURL string,
+	header http.Header,
+	contentType string,
+	reqBody io.Reader,
+	signBody string,
+) (*APIResult, error) {
+
+	var (
+		err           error
+		authorization string
+		request       *http.Request
+	)
+
+	// Construct Request
+	if request, err = http.NewRequestWithContext(ctx, method, requestURL, reqBody); err != nil {
+		return nil, err
+	}
+
+	// Header Setting Priority:
+	// Fixed Headers > Per-Request Header Parameters
+
+	// Add Request Header Parameters
+	for key, values := range header {
+		for _, v := range values {
+			request.Header.Add(key, v)
+		}
+	}
+
+	// Set Fixed Headers
+	request.Header.Set(consts.Accept, "*/*")
+	request.Header.Set(consts.ContentType, contentType)
+
+	ua := fmt.Sprintf(consts.UserAgentFormat, consts.Version, runtime.GOOS, runtime.Version())
+	request.Header.Set(consts.UserAgent, ua)
+
+	// Set Authentication
+	if authorization, err = client.credential.GenerateAuthorizationHeader(
+		ctx, method, request.URL.RequestURI(),
+		signBody,
+	); err != nil {
+		return nil, fmt.Errorf("generate authorization err:%s", err.Error())
+	}
+	request.Header.Set(consts.Authorization, authorization)
+	request.Header.Set(consts.WechatPaySerial, "566A2A3727341974E1A3E5B86AA64F733DAAEC3F")
+	// Send HTTP Request
+	result, err := client.doHTTP(request)
+	if err != nil {
+		return result, err
+	}
+	// Check if Success
+	if err = CheckResponse(result.Response); err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 func (client *Client) doRequest(
@@ -235,6 +299,9 @@ func (client *Client) doRequest(
 	// Check if Success
 	if err = CheckResponse(result.Response); err != nil {
 		return result, err
+	}
+	if validate {
+
 	}
 	// Validate WechatPay Signature
 	if err = client.validator.Validate(ctx, result.Response); err != nil {
