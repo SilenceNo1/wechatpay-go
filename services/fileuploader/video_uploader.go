@@ -6,8 +6,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/wechatpay-apiv3/wechatpay-go/core"
-	"github.com/wechatpay-apiv3/wechatpay-go/services"
+	"github.com/SilenceNo1/wechatpay-go/core"
+	"github.com/SilenceNo1/wechatpay-go/services"
 )
 
 // VideoUploadResponse 视频上传API返回结果

@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/wechatpay-apiv3/wechatpay-go/core"
-	"github.com/wechatpay-apiv3/wechatpay-go/utils"
+	"github.com/SilenceNo1/wechatpay-go/core"
+	"github.com/SilenceNo1/wechatpay-go/utils"
 )
 
 // WechatPayEncryptor 微信支付字符串加密器
